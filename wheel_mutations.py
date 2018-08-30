@@ -24,4 +24,4 @@ class SetSpeed(graphene.Mutation):
     def mutate(self, info, left, right):
         controller.setPWMA(left)
         controller.setPWMB(right)
-        return MoveCamera(ok=True)
+        return SetSpeed(ok=True)

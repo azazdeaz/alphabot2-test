@@ -2,10 +2,12 @@ import graphene
 from flask import Flask
 from flask_graphql import GraphQLView
 from wheel_mutations import SetMotor, SetSpeed
+from camera_mutations import Look
 
 class Mutation(graphene.ObjectType):
     set_motor = SetMotor.Field()
     set_speed = SetSpeed.Field()
+    look = Look.Field()
 
 class Query(graphene.ObjectType):
     hello = graphene.String(description='A typical hello world')
@@ -36,4 +38,4 @@ app.add_url_rule(
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0")
