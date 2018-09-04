@@ -5,6 +5,7 @@ import { graphql } from 'react-apollo'
 import gql from 'graphql-tag'
 import pDebounce from 'p-debounce'
 import { compose } from 'recompose'
+import Video from 'react-native-video'
 
 const SET_WHEEL_SPEED = gql`
   mutation SetWheelSpeed($left: Float, $right: Float) {
@@ -22,11 +23,16 @@ const MOVE_CAMERA = gql`
 `
 
 const Feeder = compose(
-  graphql(SET_WHEEL_SPEED, { name: 'setMotors' },),
-  graphql(MOVE_CAMERA, { name: 'setCamera' },)
+  graphql(SET_WHEEL_SPEED, { name: 'setMotors' }),
+  graphql(MOVE_CAMERA, { name: 'setCamera' })
 )
 
-class WheelVelocity extends React.Component {
+interface Props {
+  setMotors: Function,
+  setCamera: Function,
+}
+
+class WheelVelocity extends React.Component<Props> {
   state = {
     speed: 0,
     steer: 0,
@@ -39,7 +45,7 @@ class WheelVelocity extends React.Component {
     const lrRatio = (steer + 1) / 2
     const scaleUp = 100
     const left = speed * lrRatio * scaleUp
-    const right = speed * ( 1-lrRatio) * scaleUp
+    const right = speed * (1 - lrRatio) * scaleUp
     console.log({ left, right })
     try {
       await this.props.setMotors({
@@ -50,60 +56,61 @@ class WheelVelocity extends React.Component {
     }
   }, 60)
 
-  setCamera = pDebounce((channel: number, value:number) => {
+  setCamera = pDebounce((channel: number, value: number) => {
     this.setState({
-      [channel === 0 ? 'camYaw' : 'camPitch']: value
+      [channel === 0 ? 'camYaw' : 'camPitch']: value,
     })
-    const pulse = parseInt(1500 + 1000 * value)
+    const pulse = Math.trunc(1500 + 1000 * value)
     this.props.setCamera({
-      variables: { channel, pulse }
+      variables: { channel, pulse },
     })
   }, 60)
 
   render() {
     // return <View style={styles.container}><Text>b0gy0r0</Text></View>
     return (
-            <View style={styles.container}>
-              <Slider.default
-                value={this.state.speed}
-                minimumValue={-1}
-                maximumValue={1}
-                onValueChange={(speed: number) => {
-                  this.setState({ speed }, () => this.setMotors())
-                }}
-              />
-              <Text>speed: {this.state.speed.toString()}</Text>
-              <Slider.default
-                value={this.state.steer}
-                minimumValue={-1}
-                maximumValue={1}
-                onValueChange={(steer: number) => {
-                  this.setState({ steer }, () => this.setMotors())
-                }}
-              />
-              <Text>steer: {this.state.steer.toString()}</Text>
-              <Button
-                onPress={() => {
-                  this.setState({ steer: 0, speed: 0 }, () => this.setMotors())
-                }}
-                title="Stop"
-                color="#841584"
-              />
-              <Slider.default
-                value={this.state.camYaw}
-                minimumValue={-1}
-                maximumValue={1}
-                onValueChange={(value: number) => this.setCamera(0, value)}
-              />
-              <Text>camera yaw: {this.state.camYaw.toString()}</Text>
-              <Slider.default
-                value={this.state.camPitch}
-                minimumValue={-1}
-                maximumValue={1}
-                onValueChange={(value: number) => this.setCamera(1, value)}
-              />
-              <Text>camera pitch: {this.state.camPitch.toString()}</Text>
-            </View>
+      <View style={styles.container}>
+        <Slider.default
+          value={this.state.speed}
+          minimumValue={-1}
+          maximumValue={1}
+          onValueChange={(speed: number) => {
+            this.setState({ speed }, () => this.setMotors())
+          }}
+        />
+        <Text>speed: {this.state.speed.toString()}</Text>
+        <Slider.default
+          value={this.state.steer}
+          minimumValue={-1}
+          maximumValue={1}
+          onValueChange={(steer: number) => {
+            this.setState({ steer }, () => this.setMotors())
+          }}
+        />
+        <Text>steer: {this.state.steer.toString()}</Text>
+        <Button
+          onPress={() => {
+            this.setState({ steer: 0, speed: 0 }, () => this.setMotors())
+          }}
+          title="Stop"
+          color="#841584"
+        />
+        <Slider.default
+          value={this.state.camYaw}
+          minimumValue={-1}
+          maximumValue={1}
+          onValueChange={(value: number) => this.setCamera(0, value)}
+        />
+        <Text>camera yaw: {this.state.camYaw.toString()}</Text>
+        <Slider.default
+          value={this.state.camPitch}
+          minimumValue={-1}
+          maximumValue={1}
+          onValueChange={(value: number) => this.setCamera(1, value)}
+        />
+        <Text>camera pitch: {this.state.camPitch.toString()}</Text>
+        <Video source={{ uri: 'http://192.168.0.32:8080/?action=stream' }} />
+      </View>
     )
   }
 }

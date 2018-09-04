@@ -1,7 +1,7 @@
 import React from 'react';
-import WheelVelocity from './WheelVelocity'
+// import WheelVelocity from './WheelVelocity'
 // import CameraPositioning from './CameraPositioning2'
-// import Controller from './Controller'
+import Controller from './Controller'
 import { ApolloProvider } from "react-apollo";
 import client from './apolloClient'
 
@@ -12,7 +12,7 @@ export default class App extends React.Component {
       <ApolloProvider client={client} >
         {/* <WheelVelocity />
         <CameraPositioning /> */}
-        <WheelVelocity />
+        <Controller />
       </ApolloProvider>
     )
   }
