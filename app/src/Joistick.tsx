@@ -5,15 +5,10 @@ import {
   View,
   Animated,
   PanResponderInstance,
+  RegisteredStyle,
+  ViewStyle,
 } from 'react-native'
 import config from './config'
-
-const CIRCLE_RADIUS = 30
-const FIELD_RADIUS = 150
-const CENTER = {
-  x: FIELD_RADIUS - CIRCLE_RADIUS,
-  y: FIELD_RADIUS - CIRCLE_RADIUS,
-}
 
 export interface PullEvent {
   force: number
@@ -21,21 +16,29 @@ export interface PullEvent {
 }
 
 interface Props {
-  top: number
-  left: number
+  radius: number
+  knobRadius: number
   pullBack: boolean
   onChange: ({ force, radian }: PullEvent) => void
+  style?: RegisteredStyle<ViewStyle>
+}
+
+interface Position {
+  x: number
+  y: number
 }
 
 export default class Joistick extends Component<Props> {
   panResponder: PanResponderInstance
+  onTouchStartPosition: Position
+  latestPosition: Position
   state = {
     pan: new Animated.ValueXY({ x: 0, y: 0 }),
   }
 
   static defaultProps: Props = {
-    top: 0,
-    left: 0,
+    radius: 150,
+    knobRadius: 30,
     pullBack: false,
     onChange: ({ force, radian }) =>
       console.log(`change force: ${force} radian: ${radian}`),
@@ -48,18 +51,26 @@ export default class Joistick extends Component<Props> {
     // Initialize PanResponder with move handling
     this.panResponder = PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-
+      onPanResponderGrant: () => {
+        this.onTouchStartPosition = this.latestPosition || { x: 0, y: 0 }
+      },
       onPanResponderMove: (_, gestureState) => {
+        const { radius, pullBack } = this.props
         const { dx, dy } = gestureState
         let distance = Math.sqrt(dx ** 2 + dy ** 2)
-        distance = Math.min(FIELD_RADIUS, distance)
+        distance = Math.min(radius, distance)
         const radian = Math.atan2(dy, dx)
-        const x = Math.cos(radian) * distance
-        const y = Math.sin(radian) * distance
+        let x = Math.cos(radian) * distance
+        let y = Math.sin(radian) * distance
+        if (!pullBack) {
+          x += this.onTouchStartPosition.x
+          y += this.onTouchStartPosition.y
+        }
+        this.latestPosition = { x, y }
+
         this.state.pan.x.setValue(x)
         this.state.pan.y.setValue(y)
-        const force = distance / FIELD_RADIUS
-        console.log({ x, y })
+        const force = distance / radius
         this.props.onChange({ force, radian })
       },
       onPanResponderRelease: () => {
@@ -78,19 +89,33 @@ export default class Joistick extends Component<Props> {
   }
 
   render() {
-    const panStyle = {
-      transform: this.state.pan.getTranslateTransform(),
-    }
-    const stylePos = {
-      left: this.props.left,
-      top: this.props.top,
+    const { radius, knobRadius } = this.props
+    const center = radius - knobRadius
+    const ds = {
+      field: {
+        width: radius * 2,
+        height: radius * 2,
+        borderRadius: radius,
+      },
+      circle: {
+        transform: this.state.pan.getTranslateTransform(),
+        left: center,
+        top: center,
+        width: knobRadius * 2,
+        height: knobRadius * 2,
+        borderRadius: knobRadius,
+      },
+      triangle: {
+        left: center + 20,
+        top: center / 2,
+      }
     }
     return (
-      <View style={[styles.field, stylePos]}>
-        <View style={[styles.triangle]} />
+      <View style={[this.props.style, ds.field, styles.field]}>
+        <View style={[ds.triangle, styles.triangle]} />
         <Animated.View
           {...this.panResponder.panHandlers}
-          style={[panStyle, styles.circle]}
+          style={[ds.circle, styles.circle]}
         />
       </View>
     )
@@ -100,26 +125,16 @@ export default class Joistick extends Component<Props> {
 const styles = StyleSheet.create({
   circle: {
     position: 'absolute',
-    left: CENTER.x,
-    top: CENTER.y,
     backgroundColor: config.color3,
-    width: CIRCLE_RADIUS * 2,
-    height: CIRCLE_RADIUS * 2,
-    borderRadius: CIRCLE_RADIUS,
   },
   field: {
     position: 'absolute',
     backgroundColor: config.color2,
-    width: FIELD_RADIUS * 2,
-    height: FIELD_RADIUS * 2,
-    borderRadius: FIELD_RADIUS,
   },
   triangle: {
     position: 'absolute',
     width: 0,
     height: 0,
-    left: CENTER.x + 20,
-    top: CENTER.y / 2,
     backgroundColor: 'transparent',
     borderStyle: 'solid',
     borderLeftWidth: 10,

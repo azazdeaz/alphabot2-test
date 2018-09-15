@@ -4,7 +4,8 @@ import { graphql } from 'react-apollo'
 import { compose } from 'recompose'
 import gql from 'graphql-tag'
 import throttle from 'lodash/throttle'
-import { Dimensions, View } from 'react-native'
+import { Dimensions, View, StyleSheet } from 'react-native'
+import CameraStream from './CameraStream'
 
 const SET_WHEEL_SPEED = gql`
   mutation SetWheelSpeed($left: Float, $right: Float) {
@@ -21,13 +22,16 @@ const MOVE_CAMERA = gql`
   }
 `
 
+const CIRCLE_RADIUS = 30
+const JOISTICK_RADIUS = 150
+
 const Feeder = compose(
   graphql(SET_WHEEL_SPEED, { name: 'setMotors' }),
   graphql(MOVE_CAMERA, { name: 'setCamera' })
 )
 
 interface Props {
-  setMotors: Function,
+  setMotors: Function
   setCamera: Function
 }
 
@@ -56,19 +60,50 @@ class Controller extends Component<Props> {
   }
   _handleCameraChange = ({ force, radian }: PullEvent) => {
     const scale = (num: number) => 1500 + num * 1000 * force
-    const vertical = scale(-Math.sin(radian))
-    const horisontal = scale(Math.cos(radian))
+    const vertical = scale(Math.sin(radian))
+    const horisontal = scale(-Math.cos(radian))
     console.log({ vertical, horisontal })
-    this.props.setCamera({ variables: { channel: 0, pulse: vertical } })
-    this.props.setCamera({ variables: { channel: 1, pulse: horisontal } })
+    this.props.setCamera({ variables: { channel: 0, pulse: horisontal } })
+    this.props.setCamera({ variables: { channel: 1, pulse: vertical } })
   }
   render() {
     const { width, height } = Dimensions.get('window')
-    console.log({width, height})
+    
+    const styles = StyleSheet.create({
+      stream: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+      },
+      motorJoistick: {
+        position: 'absolute',
+        left: width / 2 - JOISTICK_RADIUS,
+        top: height - JOISTICK_RADIUS * 2,
+      },
+      cameraJoistick: {
+        position: 'absolute',
+        left: width / 2 - JOISTICK_RADIUS,
+        top: 0,
+        opacity: 0.2,
+      },
+    })
+
     return (
       <View>
-        <Joistick onChange={this._handleMotorChange} top={180} left={width/2} pullBack/>
-        <Joistick onChange={this._handleCameraChange} top={height - 180} left={width/2}/>
+        <CameraStream src="http://192.168.0.32:8080/?action=stream" style={styles.stream} />
+        <Joistick
+          radius={JOISTICK_RADIUS}
+          knobRadius={CIRCLE_RADIUS}
+          onChange={this._handleMotorChange}
+          style={styles.motorJoistick}
+          pullBack
+          />
+        <Joistick
+          onChange={this._handleCameraChange}
+          style={styles.cameraJoistick}
+          radius={JOISTICK_RADIUS}
+          knobRadius={CIRCLE_RADIUS}
+        />
       </View>
     )
   }
