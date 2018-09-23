@@ -1,7 +1,7 @@
 
 import time
 import math
-import smbus
+import smbus2 as smbus
 
 # ============================================================================
 # Raspi PCA9685 16-Channel PWM Servo Driver
@@ -68,7 +68,8 @@ class PCA9685:
 
   def setPWM(self, channel, on, off):
     "Sets a single PWM channel"
-    print("setPWM", on, off)
+    if (self.debug):
+        print("setPWM", on, off)
     self.write(self.__LED0_ON_L+4*channel, on & 0xFF)
     self.write(self.__LED0_ON_H+4*channel, on >> 8)
     self.write(self.__LED0_OFF_L+4*channel, off & 0xFF)
@@ -79,7 +80,8 @@ class PCA9685:
   def setServoPulse(self, channel, pulse):
     "Sets the Servo Pulse,The PWM frequency must be 50HZ"
     pulse = pulse*4096/20000        #PWM frequency is 50HZ,the period is 20000us
-    print("setServoPulse", pulse)
+    if (self.debug):
+        print("setServoPulse", pulse)
     self.setPWM(channel, 0, int(pulse))
 
 
